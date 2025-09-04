@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+  DRIVER
+}
+
+enum OrderStatus {
+  PENDING // created by customer
+  CONFIRMED // accepted by restaurant/admin
+  ASSIGNED // driver assigned
+  PICKED_UP
+  DELIVERED
+  CANCELED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?  @unique
+  passwordHash String
+  role         Role     @default(CUSTOMER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  addresses      Address[]
+  orders         Order[]        @relation("CustomerOrders")
+  driverProfile  DriverProfile?
+  ordersAsDriver Order[]        @relation("DriverOrders") // 👈 opposite side
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  label     String?
+  line1     String
+  city      String
+  lat       Float
+  lng       Float
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Restaurant {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isOpen      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  menuItems MenuItem[]
+  orders    Order[]
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  customerId      String
+  restaurantId    String
+  driverId        String?
+  status          OrderStatus   @default(PENDING)
+  paymentMethod   PaymentMethod @default(CASH)
+  total           Decimal       @db.Decimal(10, 2)
+  addressSnapshot Json
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  customer   User        @relation("CustomerOrders", fields: [customerId], references: [id])
+  restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
+  driver     User?       @relation("DriverOrders", fields: [driverId], references: [id]) // 👈
+  items      OrderItem[]
+
+  @@index([customerId])
+  @@index([restaurantId])
+  @@index([driverId])
+  @@index([status])
+}
+
+model MenuItem {
+  id           String   @id @default(cuid())
+  restaurantId String
+  name         String
+  description  String?
+  price        Decimal  @db.Decimal(10, 2)
+  isAvailable  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
+  orderItems OrderItem[] // 👈 opposite side
+
+  @@index([restaurantId])
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  menuItemId String
+  name       String
+  price      Decimal @db.Decimal(10, 2)
+  quantity   Int
+
+  order    Order    @relation(fields: [orderId], references: [id])
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@index([orderId])
+  @@index([menuItemId]) // 👈 added for performance
+}
+
+model DriverProfile {
+  userId      String   @id
+  vehicleType String?
+  licenseNo   String?
+  isAvailable Boolean  @default(false)
+  currentLat  Float?
+  currentLng  Float?
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
