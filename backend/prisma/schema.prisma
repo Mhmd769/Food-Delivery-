@@ -14,92 +14,62 @@ enum Role {
   RESTAURANT
 }
 
-enum OrderStatus {
-  PENDING // created by customer
-  CONFIRMED // accepted by restaurant/admin
-  ASSIGNED // driver assigned
-  PICKED_UP
-  DELIVERED
-  CANCELED
-}
-
-enum PaymentMethod {
-  CASH
-  CARD
-}
-
 model User {
-  id           String   @id @default(cuid())
+  id           String       @id @default(cuid())
   name         String
-  email        String   @unique
-  phone        String?  @unique
+  email        String       @unique
+  phone        String?      @unique
   passwordHash String
-  role         Role     @default(CUSTOMER)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role         Role         @default(CUSTOMER)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
-  addresses      Address[]
-  orders         Order[]        @relation("CustomerOrders")
-  driverProfile  DriverProfile?
-  ordersAsDriver Order[]        @relation("DriverOrders") 
-  restaurants    Restaurant[]   @relation("UserRestaurants") // 👈 added
-}
-
-model Address {
-  id        String   @id @default(cuid())
-  userId    String
-  label     String?
-  line1     String
-  city      String
-  lat       Float
-  lng       Float
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
+  restaurants Restaurant[]  // user can own multiple restaurants
+  orders      Order[]       @relation("CustomerOrders")
+  driverProfile DriverProfile?
+  ordersAsDriver Order[]    @relation("DriverOrders")
 }
 
 model Restaurant {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   ownerId     String
   name        String
   description String?
-  phone       String?  @unique
-  email       String?  @unique
+  phone       String?     @unique
+  email       String?     @unique
   logoUrl     String?
   bannerUrl   String?
   address     String?
   city        String?
   lat         Float?
   lng         Float?
-  rating      Float?    @default(0.0)
-  isOpen      Boolean   @default(true)
+  isOpen      Boolean     @default(true)
   openingTime String?
   closingTime String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-  owner    User       @relation("UserRestaurants", fields: [ownerId], references: [id])
-  menuItems MenuItem[]
-  orders    Order[]
+  owner      User        @relation(fields: [ownerId], references: [id])
+  menuItems  MenuItem[]
+  orders     Order[]
 }
 
 model MenuItem {
-  id           String   @id @default(cuid())
+  id           String      @id @default(cuid())
   restaurantId String
   name         String
   description  String?
-  price        Decimal  @db.Decimal(10, 2)
-  imageUrl     String?  // menu item image
-  isAvailable  Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  price        Decimal     @db.Decimal(10, 2)
+  imageUrl     String?
+  isAvailable  Boolean     @default(true)
+  createdAt    DateTime    @default(now())
 
-  restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
-  orderItems OrderItem[]
+  restaurant  Restaurant  @relation(fields: [restaurantId], references: [id])
+  orderItems  OrderItem[]
 
   @@index([restaurantId])
 }
-
 
 model Order {
   id              String        @id @default(cuid())
@@ -113,30 +83,25 @@ model Order {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  customer   User        @relation("CustomerOrders", fields: [customerId], references: [id])
-  restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
-  driver     User?       @relation("DriverOrders", fields: [driverId], references: [id]) // 👈
+  customer   User       @relation("CustomerOrders", fields: [customerId], references: [id])
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  driver     User?      @relation("DriverOrders", fields: [driverId], references: [id])
   items      OrderItem[]
-
-  @@index([customerId])
-  @@index([restaurantId])
-  @@index([driverId])
-  @@index([status])
 }
 
 model OrderItem {
-  id         String  @id @default(cuid())
+  id         String   @id @default(cuid())
   orderId    String
   menuItemId String
   name       String
-  price      Decimal @db.Decimal(10, 2)
+  price      Decimal  @db.Decimal(10, 2)
   quantity   Int
 
   order    Order    @relation(fields: [orderId], references: [id])
   menuItem MenuItem @relation(fields: [menuItemId], references: [id])
 
   @@index([orderId])
-  @@index([menuItemId]) // 👈 added for performance
+  @@index([menuItemId])
 }
 
 model DriverProfile {
@@ -149,4 +114,18 @@ model DriverProfile {
   updatedAt   DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  ASSIGNED
+  PICKED_UP
+  DELIVERED
+  CANCELED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
 }
