@@ -11,6 +11,7 @@ enum Role {
   ADMIN
   CUSTOMER
   DRIVER
+  RESTAURANT
 }
 
 enum OrderStatus {
@@ -41,7 +42,8 @@ model User {
   addresses      Address[]
   orders         Order[]        @relation("CustomerOrders")
   driverProfile  DriverProfile?
-  ordersAsDriver Order[]        @relation("DriverOrders") // 👈 opposite side
+  ordersAsDriver Order[]        @relation("DriverOrders") 
+  restaurants    Restaurant[]   @relation("UserRestaurants") // 👈 added
 }
 
 model Address {
@@ -59,15 +61,45 @@ model Address {
 
 model Restaurant {
   id          String   @id @default(cuid())
+  ownerId     String
   name        String
   description String?
-  isOpen      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  phone       String?  @unique
+  email       String?  @unique
+  logoUrl     String?
+  bannerUrl   String?
+  address     String?
+  city        String?
+  lat         Float?
+  lng         Float?
+  rating      Float?    @default(0.0)
+  isOpen      Boolean   @default(true)
+  openingTime String?
+  closingTime String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
+  owner    User       @relation("UserRestaurants", fields: [ownerId], references: [id])
   menuItems MenuItem[]
   orders    Order[]
 }
+
+model MenuItem {
+  id           String   @id @default(cuid())
+  restaurantId String
+  name         String
+  description  String?
+  price        Decimal  @db.Decimal(10, 2)
+  imageUrl     String?  // menu item image
+  isAvailable  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
+  orderItems OrderItem[]
+
+  @@index([restaurantId])
+}
+
 
 model Order {
   id              String        @id @default(cuid())
@@ -90,21 +122,6 @@ model Order {
   @@index([restaurantId])
   @@index([driverId])
   @@index([status])
-}
-
-model MenuItem {
-  id           String   @id @default(cuid())
-  restaurantId String
-  name         String
-  description  String?
-  price        Decimal  @db.Decimal(10, 2)
-  isAvailable  Boolean  @default(true)
-  createdAt    DateTime @default(now())
-
-  restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
-  orderItems OrderItem[] // 👈 opposite side
-
-  @@index([restaurantId])
 }
 
 model OrderItem {

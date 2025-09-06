@@ -5,14 +5,14 @@ import { generateToken } from "../utils/generateToken.js";
 
 // Register -> Always CUSTOMER
 export const registerUser = async (req: Request, res: Response) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, phone } = req.body;
 
   const userExists = await prisma.user.findUnique({ where: { email } });
   if (userExists) return res.status(400).json({ message: "User already exists" });
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
-    data: { name, email, passwordHash: hashedPassword, role: "CUSTOMER" },
+    data: { name, email, passwordHash: hashedPassword, role: "CUSTOMER", phone},
   });
 
   res.status(201).json({
@@ -20,6 +20,7 @@ export const registerUser = async (req: Request, res: Response) => {
     name: user.name,
     email: user.email,
     role: user.role,
+    phone: user.phone,
     token: generateToken(user.id, user.role),
   });
 };
@@ -34,6 +35,7 @@ export const loginUser = async (req: Request, res: Response) => {
       id: user.id,
       name: user.name,
       email: user.email,
+      phone: user.phone,
       role: user.role,
       token: generateToken(user.id, user.role),
     });
@@ -42,17 +44,17 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 };
 
-// Admin creates user (Admin / Driver / Customer)
+// Admin creates user (Admin / Driver / Customer / RESTAURANT)
 export const createUserByAdmin = async (req: Request, res: Response) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role ,phone} = req.body;
 
-  if (!["ADMIN", "DRIVER", "CUSTOMER"].includes(role)) {
+  if (!["ADMIN", "DRIVER", "CUSTOMER","RESTAURANT"].includes(role)) {
     return res.status(400).json({ message: "Invalid role" });
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
-    data: { name, email, passwordHash: hashedPassword, role },
+    data: { name, email, passwordHash: hashedPassword, role , phone},
   });
 
   res.status(201).json({ message: `${role} created successfully`, user });
