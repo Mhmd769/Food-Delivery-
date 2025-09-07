@@ -13,7 +13,6 @@ enum Role {
   DRIVER
   RESTAURANT
 }
-
 model User {
   id           String       @id @default(cuid())
   name         String
@@ -25,10 +24,12 @@ model User {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  restaurants Restaurant[]  // user can own multiple restaurants
-  orders      Order[]       @relation("CustomerOrders")
+  restaurants   Restaurant[]  // user can own multiple restaurants
+  orders        Order[]       @relation("CustomerOrders")
   driverProfile DriverProfile?
-  ordersAsDriver Order[]    @relation("DriverOrders")
+  ordersAsDriver Order[]      @relation("DriverOrders")
+
+  cart          Cart?         // 👈 back-reference
 }
 
 model Restaurant {
@@ -67,8 +68,33 @@ model MenuItem {
 
   restaurant  Restaurant  @relation(fields: [restaurantId], references: [id])
   orderItems  OrderItem[]
+  cartItems   CartItem[]   // 👈 back-reference
 
   @@index([restaurantId])
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  user   User       @relation(fields: [userId], references: [id])
+  items  CartItem[]
+}
+
+model CartItem {
+  id         String   @id @default(cuid())
+  cartId     String
+  menuItemId String
+  quantity   Int       @default(1)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  cart     Cart     @relation(fields: [cartId], references: [id])
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@unique([cartId, menuItemId])
 }
 
 model Order {
