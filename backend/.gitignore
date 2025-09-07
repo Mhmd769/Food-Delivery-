@@ -1,9 +1,10 @@
-node_modules
-# Keep environment variables out of version control
+# Node modules
+node_modules/
+
+# Environment variables
 .env
 
-/prisma/migrations
-
+# Prisma migrations and seed
+/prisma/migrations/
 /prisma/seed.ts
-
-/src/generated/prisma
+/src/generated/prisma/
