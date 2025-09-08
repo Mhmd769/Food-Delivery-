@@ -5,6 +5,7 @@ import userRoutes from "./routes/userRoutes.js";
 import restaurantRoutes from "./routes/restaurantRoutes.js";
 import menuRoutes from "./routes/menuRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -16,6 +17,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/restaurant", restaurantRoutes);
 app.use("/api", menuRoutes);
 app.use("/api", cartRoutes);
+app.use("/api/orders", orderRoutes);
+
 
 
 const PORT = process.env.PORT || 5000;
